@@ -1,0 +1,9 @@
+{
+  "access_token": "oauth_token_access_token",
+  "scope": "oauth_token_scope",
+  "expires_in": 4294967295,
+  "refresh_token": "oauth_token_refresh_token",
+  "token_type": "Bearer",
+  "created_on": 0,
+  "expires_on": 4294967295
+}
