@@ -120,16 +120,16 @@ class DataHubAPI extends D2LAPIClient
 
 
     /**
-     * @param BDSExtractInfo $extract
+     * @param BDSExtractInfo|string $extract
      * @param string $downloadPath
      * @return int
      */
     public function downloadBDSExtract(
-        BDSExtractInfo $extract,
+        BDSExtractInfo|string $extract,
         string $downloadPath
     ): int {
         $requestCount = 0;
-        $url = $extract->DownloadLink;
+        $url = $extract instanceof BDSExtractInfo ? $extract->DownloadLink : $extract;
 
         try {
             do {
