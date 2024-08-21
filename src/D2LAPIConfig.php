@@ -12,6 +12,7 @@ class D2LAPIConfig
     public const D2L_HOST = 'D2L_HOST';
     public const D2L_USER = 'D2L_USER';
     public const D2L_PASS = 'D2L_PASS';
+    public const D2L_MFA_KEY = 'D2L_MFA_KEY';
     public const D2L_LP_VERSION = 'D2L_LP_VERSION';
     public const D2L_LE_VERSION = 'D2L_LE_VERSION';
     public const D2L_LOGIN_TOKEN_PATH = 'D2L_LOGIN_TOKEN_PATH';
@@ -42,6 +43,7 @@ class D2LAPIConfig
                 'd2lHost' => $values[self::D2L_HOST] ?? '',
                 'd2lUser' => $values[self::D2L_USER] ?? '',
                 'd2lPass' => $values[self::D2L_PASS] ?? '',
+                'd2lMfaKey' => $values[self::D2L_MFA_KEY] ?? '',
                 'd2lLPVersion' => $values[self::D2L_LP_VERSION] ?? null,
                 'd2lLEVersion' => $values[self::D2L_LE_VERSION] ?? null,
                 'loginTokenPath' => $values[self::D2L_LOGIN_TOKEN_PATH] ?? '',
@@ -59,6 +61,7 @@ class D2LAPIConfig
             d2lHost: ArrayValue::getString($values, 'd2lHost'),
             d2lUser: ArrayValue::getString($values, 'd2lUser'),
             d2lPass: ArrayValue::getString($values, 'd2lPass'),
+            d2lMfaKey: ArrayValue::getStringNull($values, 'd2lMfaKey'),
             d2lLPVersion: ArrayValue::getStringNull($values, 'd2lLPVersion'),
             d2lLEVersion: ArrayValue::getStringNull($values, 'd2lLEVersion'),
             loginTokenPath: ArrayValue::getString($values, 'loginTokenPath'),
@@ -76,6 +79,7 @@ class D2LAPIConfig
     public string $d2lHost;
     public string $d2lUser;
     public string $d2lPass;
+    public string|null $d2lMfaKey;
     public string $d2lLPPrefix;
     public string $d2lLEPrefix;
     public string $loginTokenPath;
@@ -92,6 +96,7 @@ class D2LAPIConfig
      * @param string $d2lHost
      * @param string $d2lUser
      * @param string $d2lPass
+     * @param string|null $d2lMfaKey
      * @param string|null $d2lLPVersion
      * @param string|null $d2lLEVersion
      * @param string $loginTokenPath
@@ -107,6 +112,7 @@ class D2LAPIConfig
         string $d2lHost,
         string $d2lUser,
         string $d2lPass,
+        string|null $d2lMfaKey,
         string|null $d2lLPVersion,
         string|null $d2lLEVersion,
         string $loginTokenPath,
@@ -121,6 +127,7 @@ class D2LAPIConfig
         $this->d2lHost = $d2lHost;
         $this->d2lUser = $d2lUser;
         $this->d2lPass = $d2lPass;
+        $this->d2lMfaKey = $d2lMfaKey;
         $this->d2lLPPrefix = self::D2L_LP_PREFIX . ($d2lLPVersion ?? self::DEFAULT_D2L_LP_VERSION);
         $this->d2lLEPrefix = self::D2L_LE_PREFIX . ($d2lLEVersion ?? self::DEFAULT_D2L_LE_VERSION);
         $this->loginTokenPath = $loginTokenPath;

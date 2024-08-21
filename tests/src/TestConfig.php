@@ -11,6 +11,7 @@ class TestConfig extends D2LAPIConfig
     public const D2L_HOST                   = 'https://my.lms';
     public const D2L_USER                   = 'test_user';
     public const D2L_PASS                   = 'K33p1tS3cret!';
+    public const D2L_MFA_KEY                = null;
     public const D2L_LP_VERSION             = null;
     public const D2L_LE_VERSION             = null;
     public const D2L_LOGIN_TOKEN_PATH       = __DIR__ . '/../work/login_token.json';
@@ -29,6 +30,7 @@ class TestConfig extends D2LAPIConfig
             d2lHost: self::D2L_HOST,
             d2lUser: self::D2L_USER,
             d2lPass: self::D2L_PASS,
+            d2lMfaKey: self::D2L_MFA_KEY,
             d2lLPVersion: self::D2L_LP_VERSION,
             d2lLEVersion: self::D2L_LE_VERSION,
             loginTokenPath: self::D2L_LOGIN_TOKEN_PATH,

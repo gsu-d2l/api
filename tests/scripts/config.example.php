@@ -6,6 +6,7 @@ return [
     'd2lHost' => $env['D2L_HOST'] ?? '',
     'd2lUser' => $env['D2L_USER'] ?? '',
     'd2lPass' => $env['D2L_PASS'] ?? '',
+    'd2lMfaKey' => $env['D2L_MFA_KEY'] ?? null,
     'd2lLPVersion' => $env['D2L_LP_VERSION'] ?? null,
     'd2lLEVersion' => $env['D2L_LE_VERSION'] ?? null,
     'loginTokenPath' => $env['D2L_LOGIN_TOKEN_PATH'] ?? __DIR__ . '/login_token.json',

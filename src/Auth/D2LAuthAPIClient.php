@@ -9,14 +9,17 @@ use mjfklib\HttpClient\HttpAPIClient;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
 
 class D2LAuthAPIClient extends HttpAPIClient
 {
-    public const D2L_LOGIN_URI       = '/d2l/lp/auth/login/login.d2l';
-    public const D2L_HOME_URI        = '/d2l/home';
-    public const PKCE_VERIFIER_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-    public const PKCE_CHALLENGE_MODE = 'S256';
+    public const D2L_LOGIN_URI         = '/d2l/lp/auth/login/login.d2l';
+    public const D2L_MFA_URI           = '/d2l/lp/auth/twofactorauthentication/TwoFactorCodeEntry.d2l';
+    public const D2L_PROCESS_LOGIN_URI = '/d2l/lp/auth/login/ProcessLoginActions.d2l';
+    public const D2L_HOME_URI          = '/d2l/home';
+    public const PKCE_VERIFIER_CHARS   = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    public const PKCE_CHALLENGE_MODE   = 'S256';
 
 
     /**
@@ -65,7 +68,7 @@ class D2LAuthAPIClient extends HttpAPIClient
 
         $codeVerifier = join(
             array_map(
-                fn (int $v): string => substr(
+                fn(int $v): string => substr(
                     static::PKCE_VERIFIER_CHARS,
                     $v % strlen(static::PKCE_VERIFIER_CHARS),
                     1
@@ -190,8 +193,8 @@ class D2LAuthAPIClient extends HttpAPIClient
 
         /** @var array<string,string> $params */
         $params = array_map(
-            fn ($v) => urldecode($v),
-            array_column(array_map(fn ($v) => explode('=', $v), explode("&", $url)), 1, 0)
+            fn($v) => urldecode($v),
+            array_column(array_map(fn($v) => explode('=', $v), explode("&", $url)), 1, 0)
         );
 
         if (($params['state'] ?? '') !== $state) {
@@ -236,13 +239,105 @@ class D2LAuthAPIClient extends HttpAPIClient
             302
         );
 
+        if (
+            is_string($this->config->d2lMfaKey)
+            && in_array(self::D2L_MFA_URI, $response->getHeader('Location'), true)
+        ) {
+            $response = $this->doMfa(
+                implode("; ", array_map(
+                    fn($v) => trim(explode(";", $v)[0] ?? ''),
+                    $response->getHeader("Set-Cookie")
+                )),
+                $this->config->d2lMfaKey
+            );
+        }
+
         if (!in_array(self::D2L_HOME_URI, $response->getHeader('Location'), true)) {
             throw new \RuntimeException("Error logging in");
         }
 
         return implode("; ", array_map(
-            fn ($v) => trim(explode(";", $v)[0] ?? ''),
+            fn($v) => trim(explode(";", $v)[0] ?? ''),
             $response->getHeader("Set-Cookie")
         ));
+    }
+
+
+    /**
+     * @param string $loginToken
+     * @param string $mfaKey
+     * @return ResponseInterface
+     */
+    private function doMfa(
+        string $loginToken,
+        string $mfaKey
+    ): ResponseInterface {
+        list(
+            $xsrfName,
+            $xsrfCode,
+            $hitCodeSeed
+        ) = $this->getXSRFToken($loginToken);
+
+        $rightNow = time();
+        $mfaCode = TOTP::generateCode(
+            $mfaKey,
+            TOTP::getCounter($rightNow)
+        );
+        $hitCode = $hitCodeSeed + ((1000 * $rightNow + 100000000) % 100000000);
+
+        $response = $this->sendRequest(
+            $this->addRequestParams(
+                $this
+                    ->createRequest('POST', self::D2L_MFA_URI . '?ou=1070555&d2l_rh=rpc&d2l_rt=call')
+                    ->withHeader('Cookie', $loginToken),
+                [
+                    'd2l_rf'       => 'VerifyPin',
+                    'params'       => '{"param1":"' . $mfaCode . '"}',
+                    "{$xsrfName}"  => $xsrfCode,
+                    'd2l_hitcode'  => $hitCode,
+                    'd2l_action'   => 'rpc'
+                ]
+            ),
+            200
+        );
+        $loginToken = implode("; ", array_map(
+            fn($v) => trim(explode(";", $v)[0] ?? ''),
+            $response->getHeader("Set-Cookie")
+        ));
+
+        return $this->sendRequest(
+            $this
+                ->createRequest('GET', self::D2L_PROCESS_LOGIN_URI)
+                ->withHeader('Cookie', $loginToken),
+            302
+        );
+    }
+
+
+    /**
+     * @param string $loginToken
+     * @return array{0:string,1:string,2:int}
+     */
+    private function getXSRFToken(string $loginToken): array
+    {
+        $response = $this->sendRequest(
+            $this
+                ->createRequest('GET', self::D2L_MFA_URI)
+                ->withHeader('Cookie', $loginToken),
+            200
+        );
+
+        $lines = explode("\n", $response->getBody()->getContents());
+        $grep = preg_grep('/.*D2L\.LP\.Web\.Authentication\.Xsrf\.Init/', $lines);
+        $line = is_array($grep) ? array_pop($grep) : "";
+
+        $matches = [];
+        preg_match('/\\\"P\\\"\:\[(.*)\]/', $line, $matches);
+        $matches = array_map(
+            fn(string $v) => trim($v, '\"'),
+            explode(",", $matches[1] ?? ",,")
+        );
+
+        return [$matches[0] ?? '', $matches[1] ?? '', intval($matches[2] ?? '0')];
     }
 }
