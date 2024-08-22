@@ -9,7 +9,7 @@ use GSU\D2L\API\Outcomes\Model\OutcomeDetails;
 use GSU\D2L\API\Outcomes\Model\OutcomeDetailsImport;
 use GSU\D2L\API\Outcomes\Model\OutcomeRegistry;
 
-class OutcomesAPI extends D2LAPIClient
+final class OutcomesAPI extends D2LAPIClient
 {
     public const LO_URL = 'https://lores-us-east-1.brightspace.com/api/lores/1.0/registries/';
 
@@ -77,14 +77,19 @@ class OutcomesAPI extends D2LAPIClient
         string $registryId,
         array $objectives
     ): void {
-        $request = $this->createRequest('PUT', self::LO_URL . $registryId, true);
-        $request = $request->withHeader('Content-Type', 'application/json');
-        $request->getBody()->write(json_encode([
+        $body = json_encode([
             'objectives' => array_map(
-                fn ($v) => new OutcomeDetailsImport($v),
+                fn($v) => new OutcomeDetailsImport($v),
                 array_values($objectives)
             )
-        ], JSON_THROW_ON_ERROR));
+        ], JSON_THROW_ON_ERROR);
+
+        $request = $this
+            ->createRequest('PUT', self::LO_URL . $registryId, true)
+            ->withHeader('Host', 'lores-us-east-1.brightspace.com')
+            ->withHeader('Content-Type', 'application/json')
+            ->withHeader('Content-Length', strval(strlen($body)));
+        $request->getBody()->write($body);
 
         $this->sendRequest($request, [200]);
     }
